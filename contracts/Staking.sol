@@ -114,7 +114,7 @@ contract Staking is Ownable {
         uint rewardTime;
         for (uint i=0; i<length;){
             if (_timeInDays>=rewards_[i]) {
-                rewardTime = rewards_[i];// 30 0 180 20 365 50 30 0 365 50
+                rewardTime = rewards_[i];
             }
             unchecked{++i;}
         }
