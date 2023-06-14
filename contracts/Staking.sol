@@ -105,9 +105,10 @@ contract Staking is Ownable {
             }
         }
         stakeNonce[_msgSender()].increment();
-        stakeBalances[_msgSender()][stakeNonce[_msgSender()].current()].amount=_amount;
-        stakeBalances[_msgSender()][stakeNonce[_msgSender()].current()].startAt=block.timestamp;
-        stakeBalances[_msgSender()][stakeNonce[_msgSender()].current()].endAt=block.timestamp+getSecInDays(_timeInDays);
+        Stake storage newStake = stakeBalances[_msgSender()][stakeNonce[_msgSender()].current()];
+        newStake.amount=_amount;
+        newStake.startAt=block.timestamp;
+        newStake.endAt=block.timestamp+getSecInDays(_timeInDays);
         tokensStakedByAddress[_msgSender()]+=_amount;
         totalTokensStaked+=_amount;
         uint length = rewards_.length;//6
