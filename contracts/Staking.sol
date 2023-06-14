@@ -119,8 +119,7 @@ contract Staking is Ownable {
             }
             unchecked{++i;}
         }
-        stakeBalances[_msgSender()][stakeNonce[_msgSender()].current()].rewardValue=
-        _amount/100*rewards[rewardTime]*_timeInDays/DAYS_IN_YEAR;
+        newStake.rewardValue=_amount/100*rewards[rewardTime]*_timeInDays/DAYS_IN_YEAR;
         emit deposit(stakeNonce[_msgSender()].current(), _msgSender());
     }
 
