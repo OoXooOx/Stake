@@ -1,7 +1,6 @@
 
 // SPDX-License-Identifier: MIT
 
-// Need fix totalStakeTokens whaen user invoke claim
 // Need add possibility delete rewards 
 // Optionally fix unique addresses when user invoke claim
 // Optionally add possibility for stake for 1 hour for test
