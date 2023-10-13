@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: MIT
 
 // Need fix totalStakeTokens whaen user invoke claim
@@ -105,12 +106,15 @@ contract Staking is Ownable {
             }
         }
         stakeNonce[_msgSender()].increment();
-        Stake storage newStake = stakeBalances[_msgSender()][stakeNonce[_msgSender()].current()];
+        uint stakeCurrentNonce = stakeNonce[_msgSender()].current();
+        Stake storage newStake = stakeBalances[_msgSender()][stakeCurrentNonce];
         newStake.amount=_amount;
         newStake.startAt=block.timestamp;
         newStake.endAt=block.timestamp+getSecInDays(_timeInDays);
-        tokensStakedByAddress[_msgSender()]+=_amount;
-        totalTokensStaked+=_amount;
+        unchecked {
+            tokensStakedByAddress[_msgSender()]+=_amount;
+            totalTokensStaked+=_amount;
+        }
         uint length = rewards_.length;//6
         uint rewardTime;
         for (uint i=0; i<length;){
@@ -120,50 +124,52 @@ contract Staking is Ownable {
             unchecked{++i;}
         }
         newStake.rewardValue=_amount/100*rewards[rewardTime]*_timeInDays/DAYS_IN_YEAR;
-        emit deposit(stakeNonce[_msgSender()].current(), _msgSender());
+        emit deposit(stakeCurrentNonce, _msgSender());
     }
 
     function claim (uint _stakeNumber) external {
-        require(block.timestamp>=stakeBalances[_msgSender()][_stakeNumber].endAt,
-        "too early");
-        require(!stakeBalances[_msgSender()][_stakeNumber].withdraw, "already receive");
+        Stake storage claimStake = stakeBalances[_msgSender()][_stakeNumber];
+        require(block.timestamp>=claimStake.endAt, "too early");
+        require(!claimStake.withdraw, "already receive");
         require(_stakeNumber!=0 && _stakeNumber<=stakeNonce[_msgSender()].current(), "don't do this");
-        stakeBalances[_msgSender()][_stakeNumber].withdraw=true;
-        tokensStakedByAddress[_msgSender()]-=stakeBalances[_msgSender()][_stakeNumber].amount;
-        uint extraRewards = getDaysFromSec((block.timestamp-stakeBalances[_msgSender()][_stakeNumber].endAt))
-        *stakeBalances[_msgSender()][_stakeNumber].rewardValue
-        /getDaysFromSec(stakeBalances[_msgSender()][_stakeNumber].endAt-stakeBalances[_msgSender()][_stakeNumber].startAt);
+        claimStake.withdraw=true;
+        unchecked {
+            tokensStakedByAddress[_msgSender()]-=claimStake.amount;
+            totalTokensStaked-=claimStake.amount;
+        }
+        uint extraRewards = getDaysFromSec((block.timestamp-claimStake.endAt))
+        *claimStake.rewardValue
+        /getDaysFromSec(claimStake.endAt-claimStake.startAt);
         (bool success, bytes memory response) = address(TST).call(
             abi.encodeWithSignature(
                 "transfer(address,uint256)",
                 _msgSender(),
-                stakeBalances[_msgSender()][_stakeNumber].amount+extraRewards+
-                stakeBalances[_msgSender()][_stakeNumber].rewardValue)
+                claimStake.amount+extraRewards+claimStake.rewardValue)
             );
         require(success && (response.length == 0 || abi.decode(response, (bool))), "Failed send funds");
-        totalTokensStaked-=stakeBalances[_msgSender()][_stakeNumber].amount;
         emit withdrawal(_stakeNumber, _msgSender());
     }
 
     function sendBackDeposit(address _staker, uint _stakeNumber) external onlyOwner {
-        require(block.timestamp>=stakeBalances[_staker][_stakeNumber].endAt,
-        "too early");
-        require(!stakeBalances[_staker][_stakeNumber].withdraw, "already receive");
+        Stake storage sendBackStake = stakeBalances[_staker][_stakeNumber];
+        require(block.timestamp>=sendBackStake.endAt, "too early");
+        require(!sendBackStake.withdraw, "already receive");
         require(_stakeNumber!=0 && _stakeNumber<=stakeNonce[_staker].current(), "don't do this");
-        stakeBalances[_staker][_stakeNumber].withdraw=true;
-        tokensStakedByAddress[_staker]-=stakeBalances[_staker][_stakeNumber].amount;
-        uint extraRewards = getDaysFromSec((block.timestamp-stakeBalances[_staker][_stakeNumber].endAt))
-        *stakeBalances[_staker][_stakeNumber].rewardValue
-        /getDaysFromSec(stakeBalances[_staker][_stakeNumber].endAt-stakeBalances[_staker][_stakeNumber].startAt);
+        sendBackStake.withdraw=true;
+        unchecked {
+            tokensStakedByAddress[_staker]-=sendBackStake.amount;
+            totalTokensStaked-=sendBackStake.amount;
+        }
+        uint extraRewards = getDaysFromSec((block.timestamp-sendBackStake.endAt))
+        *sendBackStake.rewardValue
+        /getDaysFromSec(sendBackStake.endAt-sendBackStake.startAt);
         (bool success, bytes memory response) = address(TST).call(
             abi.encodeWithSignature(
                 "transfer(address,uint256)",
                 _staker,
-                stakeBalances[_staker][_stakeNumber].amount+extraRewards+
-                stakeBalances[_staker][_stakeNumber].rewardValue)
+                sendBackStake.amount+extraRewards+sendBackStake.rewardValue)
             );
         require(success && (response.length == 0 || abi.decode(response, (bool))), "Failed send funds");
-        totalTokensStaked-=stakeBalances[_staker][_stakeNumber].amount;
         emit withdrawal(_stakeNumber, _staker);
     }
     //↓↓↓↓↓↓// SETTER //↓↓↓↓↓↓
