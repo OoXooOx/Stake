@@ -98,7 +98,7 @@ contract Staking is Ownable {
                 address(this),
                 _amount)
             );
-        require(success && abi.decode(response, (bool)), "Failed send funds");
+        require(success && (response.length == 0 || abi.decode(response, (bool))), "Failed send funds");
         if (stakeNonce[_msgSender()].current() == 0) {
             unchecked {
                 uniqueAddressesStaked++;
@@ -140,7 +140,7 @@ contract Staking is Ownable {
                 stakeBalances[_msgSender()][_stakeNumber].amount+extraRewards+
                 stakeBalances[_msgSender()][_stakeNumber].rewardValue)
             );
-        require(success && abi.decode(response, (bool)), "Failed to send funds!");
+        require(success && (response.length == 0 || abi.decode(response, (bool))), "Failed send funds");
         totalTokensStaked-=stakeBalances[_msgSender()][_stakeNumber].amount;
         emit withdrawal(_stakeNumber, _msgSender());
     }
@@ -162,7 +162,7 @@ contract Staking is Ownable {
                 stakeBalances[_staker][_stakeNumber].amount+extraRewards+
                 stakeBalances[_staker][_stakeNumber].rewardValue)
             );
-        require(success && abi.decode(response, (bool)), "Failed to send funds!");
+        require(success && (response.length == 0 || abi.decode(response, (bool))), "Failed send funds");
         totalTokensStaked-=stakeBalances[_staker][_stakeNumber].amount;
         emit withdrawal(_stakeNumber, _staker);
     }
